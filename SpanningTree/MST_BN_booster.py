@@ -72,7 +72,7 @@ def sampler(textFilePath,quant_no,unique):
 			output2 = pd.DataFrame(output)
 			output2.to_csv('boost'+textFilePath+'/sample'+str(j)+'.csv')
 
-textFilePath = 'ZenaProbesRemission'
+textFilePath = 'ZenaProbesProgressive'
 quant_no = 3
 unique = False
 

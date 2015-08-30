@@ -102,10 +102,10 @@ def writeMargIndep(textFilePath,quant_no,unique,outputFile):
 COND_TOT_MIN = 0.20
 DEP_MAX = 0.20			
 
-textFilePath = 'ZenaProbesEntireData.csv'
+textFilePath = 'ZenaProbesProgressive.csv'
 quant_no = 3
 unique = False
-outputFile = 'ZenaProbesEntireDataColliders.csv'
+outputFile = 'ZenaProbesProgressiveColliders.csv'
 
 writeMargIndep(textFilePath,quant_no,unique,outputFile)
 

@@ -10,6 +10,7 @@ from numpy import *
 from math import *
 
 from random import randint
+from graphDrawer import *
 
 
 ##############################################################################
@@ -151,9 +152,8 @@ def spanTree(textFile,quant_no,unique):
 	theDepMat = DependencyMatrix(theData, varNum,stateNum)
 	
 	theDepList = DependencyList(theDepMat)
-
-	theSpanningTree = SpanningTreeAlgorithm(theDepList, varNum)
 	
+	theSpanningTree = SpanningTreeAlgorithm(theDepList, varNum)
 
 	nameIndex = list(grouped.transpose().columns.values)
 	
@@ -197,40 +197,49 @@ def DependencyList(depMatrix):
 # Functions implementing the spanning tree algorithm
 # Coursework 2 task 4
 
+
+parent = dict()
+rank = dict()
+
+def make_set(vertice):
+	parent[vertice] = vertice
+	rank[vertice] = 0
+
+def find(vertice):
+	if parent[vertice] != vertice:
+		parent[vertice] = find(parent[vertice])
+	return parent[vertice]
+
+def union(vertice1, vertice2):
+	root1 = find(vertice1)
+	root2 = find(vertice2)
+	if root1 != root2:
+		if rank[root1] > rank[root2]:
+			parent[root2] = root1
+		else:
+			parent[root1] = root2
+			if rank[root1] == rank[root2]: rank[root2] += 1
+
+
 def SpanningTreeAlgorithm(depList, noVariables):
+
+    graphVertices = numpy.arange(0,noVariables,1)
+
+    for v in graphVertices:
+	make_set(v)
+    
     spanningTree = []
-    visitedNodes = []
-    
     sortedDepList = sorted(depList, key=operator.itemgetter(0), reverse=True)
-    count = 0
-    
-    for w , i , j in sortedDepList:
-      #print visitedNodes
-      if count == noVariables:
-	break
-      if i not in visitedNodes and j not in visitedNodes:
-	visitedNodes += [i]
-	visitedNodes += [j]
-	spanningTree += [[w,i,j]]
-	count += 1
-      if i not in visitedNodes and j in visitedNodes:
-	visitedNodes += [i]
-	spanningTree += [[w,i,j]]
-	count += 1
-      if j not in visitedNodes and i in visitedNodes:
-	visitedNodes += [j]
-	spanningTree += [[w,i,j]]
-	count += 1
-    
-    #print spanningTree
-    return array(spanningTree)
+    for w, v1, v2 in sortedDepList:
+	if find(v1) != find(v2):
+		union(v1, v2)
+		spanningTree += [[w,v1,v2]]  
+	
+    return spanningTree		
+		
 
 
-textFilePath = 'ZenaProbes3.csv'
-quant_no = 3
-unique = False # False - is max() , True - individuals
-
-def writeTree(textFilePath,quant_no,unique):
+def writeTree(textFilePath,quant_no,unique,outputFile):
 	try:
 		df = pd.read_csv(textFilePath,header=None)
 	except:
@@ -247,77 +256,19 @@ def writeTree(textFilePath,quant_no,unique):
 	print score
 	if output is not None:
 		output2 = pd.DataFrame(output)
-		output2.to_csv('nim1.txt')
+		output2.to_csv(outputFile)
 			
-def writeAllTrees(mintot, maxtot, mingene, maxgene,unique, quant_no):
-
-	# import table which details number of probes and genes in each file
-	# there are multiple genes of the same name as, certain probes fix to different parts of the gene
-	indexTab = pd.read_csv('../outputs/geneCount.csv')	
-	indexTab.fillna(0, inplace=True)
-	indexTab.convert_objects(convert_numeric=True)
-	with open('outputs/bayesNetComb-disc-unique-'+str(unique)+'-mintot-'+str(mintot)+'-maxtot-'+str(maxtot)+'-mingene-'+str(mingene)+'-maxgene-'+str(maxgene)+'-quant_no-'+str(quant_no)+'.txt', 'w') as bayesTextFile:
-		bayesTextFile.write('disc-unique-'+str(unique)+'-mintot-'+str(mintot)+'-maxtot-'+str(maxtot)+'-mingene-'+str(mingene)+'-maxgene-'+str(maxgene)+'-quant_no-'+str(quant_no)+'\n')			
-		for i, row in indexTab.iterrows():
-			if indexTab.ix[i,2] > mintot and indexTab.ix[i,2] < maxtot:
-				if indexTab.ix[i,1] > mingene and indexTab.ix[i,1] < maxgene:
-					textFilePath = '../'+indexTab.ix[i,0]
-					print textFilePath
-					bayesTextFile.write('\n'+textFilePath+'\n')
-					output = spanTree(textFilePath,quant_no,unique)
-					score = depScore(textFilePath,quant_no,unique)
-					print output
-					print score
-					if output is not None:
-						bayesTextFile.write(output)
-						bayesTextFile.write(str(score))
 
 
+textFilePath = 'ZenaProbesProgressive'
+quant_no = 3
+unique = False # False - is max() , True - individuals
+outputFile = textFilePath+str(quant_no)+'-'+str(unique)+'.csv'
 
-############################################################################
-############### BOOTSTRAPPER ###############################################
+writeTree(textFilePath+'.csv',quant_no,unique,outputFile)
 
-def sampler(textFilePath,quant_no,unique):
-	try:
-		df = pd.read_csv(textFilePath,header=None)
-	except:
-		print 'next file'
-		return
-	
-	df.fillna(0, inplace=True)
-	df.convert_objects(convert_numeric=True)
-	
-	n = df.shape[1] - 1
+outputGraph = textFilePath+str(quant_no)+'-'+str(unique)+'.png'
 
-	boost = df[[0]]
-	
-	for j in range(1,100):	
+drawGraph(outputFile, outputGraph)
 
-		for i in range(1,n):
-	## pick a random number between 0 and n
-
-			k = randint(0,n)
-			column = df[[k]]
-			boost[i] = column
-		## append column x to dataframe
-
-		## build df as before
-	
-		print boost
-		## Takes as Input Panda DataFrame with column (0) as gene name and 0 for null values
-		output = spanTree(boost,quant_no,unique)
-		score = depScore(boost,quant_no,unique)
-		print output
-		print score
-	 
-		if output is not None:
-			output2 = pd.DataFrame(output)
-			output2.to_csv('boost/sample'+str(j)+'.csv')
-
-
-
-# writeAllTrees(5,50,1,1000,True,10)
-#writeTree(textFilePath,quant_no,unique)
-
-sampler(textFilePath,quant_no,unique)
 
